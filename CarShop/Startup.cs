@@ -20,6 +20,7 @@
                     .Add<IValidator, Validator>()
                     .Add<IPasswordHasher, PasswordHasher>()
                     .Add<IUserService, UserService>()
+                    .Add<IIssueService, IssueService>()
                     .Add<CarShopDbContext>())
                 .WithConfiguration<CarShopDbContext>(context => context
                     .Database.Migrate())

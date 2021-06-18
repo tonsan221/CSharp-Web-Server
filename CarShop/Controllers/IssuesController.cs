@@ -1,21 +1,48 @@
 ﻿namespace CarShop.Controllers
 {
-    using CarShop.Data;
-    using CarShop.Models.Issues;
     using CarShop.Services;
     using MyWebServer.Controllers;
     using MyWebServer.Http;
-    using System.Linq;
 
     public class IssuesController : Controller
     {
         private readonly IUserService userService;
-        private readonly CarShopDbContext data;
+        private readonly IIssueService issueService;
 
-        public IssuesController(IUserService userService, CarShopDbContext data)
+        public IssuesController(
+            IUserService userService, 
+            IIssueService issueService)
         {
             this.userService = userService;
-            this.data = data;
+            this.issueService = issueService;
+        }
+
+        public HttpResponse Add()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public HttpResponse Add(string description, string carId)
+        {
+            if (string.IsNullOrEmpty(description) || description.Length < 5)
+            {
+                return Error("Description should be filled and must be more than 5 characters.");
+            }
+
+            this.issueService.Add(description, carId);
+            return Redirect($"/Issues/CarIssues?carId={carId}");
+        }
+
+        public HttpResponse Fix(string issueId)
+        {
+            if (!this.userService.IsMechanic(this.User.Id))
+            {
+                return Error("Clients cannot fix cars.");
+            }
+
+            var carId = this.issueService.FixIssue(issueId);
+            return Redirect($"/Issues/CarIssues?carId={carId}");
         }
 
         [Authorize]
@@ -23,8 +50,7 @@
         {
             if (!this.userService.IsMechanic(this.User.Id))
             {
-                var userOwnsCar = this.data.Cars
-                    .Any(c => c.Id == carId && c.OwnerId == this.User.Id);
+                var userOwnsCar = this.issueService.UserOwnsCar(carId, this.User.Id);
 
                 if (!userOwnsCar)
                 {
@@ -32,22 +58,7 @@
                 }
             }
 
-            var carWithIssues = this.data
-                .Cars
-                .Where(c => c.Id == carId)
-                .Select(c => new CarIssuesViewModel
-                {
-                    Id = c.Id,
-                    Model = c.Model,
-                    Year = c.Year,
-                    Issues = c.Issues.Select(i => new IssueListingViewModel
-                    {
-                        Id = i.Id,
-                        Description = i.Description,
-                        IsFixed = i.IsFixed
-                    })
-                })
-                .FirstOrDefault();
+            var carWithIssues = this.issueService.GetCarWithIssues(carId);
 
             if (carWithIssues == null)
             {
