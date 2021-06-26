@@ -26,6 +26,16 @@
             this.db.SaveChanges();
         }
 
+        public string DeleteIssue(string issueId)
+        {
+            var issue = this.db.Issues.FirstOrDefault(x => x.Id == issueId);
+
+            this.db.Issues.Remove(issue);
+            this.db.SaveChanges();
+
+            return issue.CarId;
+        }
+
         public string FixIssue(string issueId)
         {
             var issue = this.db.Issues.FirstOrDefault(x => x.Id == issueId);

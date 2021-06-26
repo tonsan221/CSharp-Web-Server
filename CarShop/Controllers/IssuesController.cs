@@ -31,6 +31,7 @@
             }
 
             this.issueService.Add(description, carId);
+
             return Redirect($"/Issues/CarIssues?carId={carId}");
         }
 
@@ -42,6 +43,14 @@
             }
 
             var carId = this.issueService.FixIssue(issueId);
+
+            return Redirect($"/Issues/CarIssues?carId={carId}");
+        }
+
+        public HttpResponse Delete(string issueId)
+        {
+            var carId = this.issueService.DeleteIssue(issueId);
+
             return Redirect($"/Issues/CarIssues?carId={carId}");
         }
 
