@@ -1,21 +1,28 @@
 ﻿using Git.Services;
 using MyWebServer.Controllers;
 using MyWebServer.Http;
+using System.Linq;
 
 namespace Git.Controllers
 {
     public class CommitsController : Controller
     {
         private readonly ICommitService commitService;
+        private readonly IValidator validator;
 
-        public CommitsController(ICommitService commitService)
+        public CommitsController(ICommitService commitService, IValidator validator)
         {
             this.commitService = commitService;
+            this.validator = validator;
         }
 
-        [Authorize]
         public HttpResponse Create(string id)
         {
+            if (!this.User.IsAuthenticated)
+            {
+                return this.Error("You must be logged in to access this resource.");
+            }
+
             var repository = this.commitService.GetRepositoryCommits(id);
 
             return this.View(repository);
@@ -25,9 +32,11 @@ namespace Git.Controllers
         [HttpPost]
         public HttpResponse Create(string description, string id)
         {
-            if (string.IsNullOrEmpty(description) || description.Length < 5)
+            var errors = this.validator.ValidateCommit(description);
+
+            if (errors.Any())
             {
-                return this.Error("Description must be more than 5 characters.");
+                return this.Error(errors);
             }
 
             this.commitService.Create(description, id, this.User.Id);
@@ -35,17 +44,25 @@ namespace Git.Controllers
             return this.Redirect("/Repositories/All");
         }
 
-        [Authorize]
         public HttpResponse All()
         {
+            if (!this.User.IsAuthenticated)
+            {
+                return this.Error("You must be logged in to access this resource.");
+            }
+
             var userCommits = this.commitService.GetAllUserCommits(this.User.Id);
 
             return this.View(userCommits);
         }
 
-        [Authorize]
         public HttpResponse Delete(string id)
         {
+            if (!this.User.IsAuthenticated)
+            {
+                return this.Error("You must be logged in to access this resource.");
+            }
+
             this.commitService.Delete(id);
 ;
             return this.Redirect("/Commits/All");

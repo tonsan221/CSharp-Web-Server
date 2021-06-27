@@ -1,39 +1,52 @@
 ﻿using Git.Services;
 using MyWebServer.Controllers;
 using MyWebServer.Http;
+using System.Linq;
 
 namespace Git.Controllers
 {
     public class RepositoriesController : Controller
     {
         private readonly IRepositoryService repositoryService;
+        private readonly IValidator validator;
 
-        public RepositoriesController(IRepositoryService repositoryService)
+        public RepositoriesController(IRepositoryService repositoryService, IValidator validator)
         {
             this.repositoryService = repositoryService;
+            this.validator = validator;
         }
 
-        [Authorize]
         public HttpResponse All()
         {
+            if (!this.User.IsAuthenticated)
+            {
+                return this.Error("You must be logged in to access this resource.");
+            }
+
             var repositories = this.repositoryService.GetPublicRepositories();
 
             return this.View(repositories);
         }
 
-        [Authorize]
 
         public HttpResponse Create()
         {
+            if (!this.User.IsAuthenticated)
+            {
+                return this.Error("You must be logged in to access this resource.");
+            }
+
             return this.View();
         }
 
         [HttpPost]
         public HttpResponse Create(string name, string repositoryType)
         {
-            if (string.IsNullOrEmpty(name) || name.Length < 3 || name.Length > 10)
+            var errors = this.validator.ValidateRepository(name, repositoryType);
+
+            if (errors.Any())
             {
-                return this.Error("Repository name must be between 3 and 10 characters long.");
+                return this.Error(errors);
             }
 
             this.repositoryService.Create(name, repositoryType.ToLower(), this.User.Id);

@@ -9,7 +9,7 @@ namespace Git.Controllers
         {
             if (this.User.IsAuthenticated)
             {
-                return Redirect("/Cars/All");
+                return Redirect("/Repositories/All");
             }
 
             return this.View();

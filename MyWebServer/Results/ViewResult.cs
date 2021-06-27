@@ -37,6 +37,7 @@
 
             var viewContent = File.ReadAllText(viewPath);
 
+
             var (layoutPath, layoutExists) = FindLayout();
 
             if (layoutExists)

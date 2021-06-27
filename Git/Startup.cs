@@ -20,6 +20,7 @@
                     .Add<IUsersService, UserService>()
                     .Add<IRepositoryService, RepositoryService>()
                     .Add<ICommitService, CommitService>()
+                    .Add<IValidator, Validator>()
                     .Add<ApplicationDbContext>())
                 .WithConfiguration<ApplicationDbContext>(context => context
                     .Database.Migrate())

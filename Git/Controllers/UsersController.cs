@@ -1,19 +1,20 @@
-﻿using Git.Data;
-using Git.Models.Users;
+﻿using Git.Models.Users;
 using Git.Services;
 using MyWebServer.Controllers;
 using MyWebServer.Http;
-using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace Git.Controllers
 {
     public class UsersController : Controller
     {
         private readonly IUsersService usersService;
+        private readonly IValidator validator;
 
-        public UsersController(IUsersService usersService)
+        public UsersController(IUsersService usersService, IValidator validator)
         {
             this.usersService = usersService;
+            this.validator = validator;
         }
         public HttpResponse Login()
         {
@@ -51,50 +52,28 @@ namespace Git.Controllers
         }
 
         [HttpPost] 
-        public HttpResponse Register(RegisterFormModel input)
+        public HttpResponse Register(RegisterFormModel model)
         {
-            if (!this.usersService.IsUsernameAvailable(input.Username))
+            var modelErrors = this.validator.ValidateUserRegistration(model);
+
+            if (modelErrors.Any())
             {
-                return this.Error("Username already exists.");
+                return this.Error(modelErrors);
             }
 
-            if (!this.usersService.IsEmailAvailable(input.Email))
-            {
-                return this.Error("Email already exists.");
-            }
-
-            if (string.IsNullOrEmpty(input.Username) || 
-                input.Username.Length < 5 ||
-                input.Username.Length > 20)
-            {
-                return this.Error("Username should be between 5 and 20 characters.");
-            }
-
-            if (!Regex.IsMatch(input.Email, DataConstants.UserEmailRegularExpression))
-            {
-                return this.Error("Email is not valid.");
-            }
-
-            if (string.IsNullOrEmpty(input.Password) || 
-                input.Password.Length < 6 ||
-                input.Password.Length > 20)
-            {
-                return this.Error("Password should be between 6 and 20 characters.");
-            }
-
-            if (input.Password != input.ConfirmPassword)
-            {
-                return this.Error("Passwords must match.");
-            }
-
-            this.usersService.CreateUser(input.Username, input.Email, input.Password);
+            this.usersService.CreateUser(model.Username, model.Email, model.Password);
 
             return this.Redirect("/Users/Login");
         }
 
         public HttpResponse Logout()
         {
-            this.SignIn(this.User.Id);
+            if (!this.User.IsAuthenticated)
+            {
+                return this.Error("You must log in first.");
+            }
+
+            this.SignOut();
 
             return this.Redirect("/");
         }
